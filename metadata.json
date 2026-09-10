@@ -1,0 +1,6 @@
+{
+  "name": "Timer Kontes Kapal Indonesia",
+  "description": "Aplikasi Web Timer untuk Kontes Kapal Indonesia (Divisi: ROV, ASV, ERC, FERC)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
