@@ -24,14 +24,13 @@ interface ClientTimerProps {
 }
 
 type SessionType = 'PREP' | 'RACE';
-type TimerPhase = 'IDLE' | 'PRE_START' | 'RUNNING' | 'FINISHED';
+type TimerPhase = 'IDLE' | 'RUNNING' | 'FINISHED';
 type TimerDirection = 'DOWN' | 'UP' | 'STOPWATCH';
 
 export default function ClientTimer({ teamId, teamName, division }: ClientTimerProps) {
   const [session, setSession] = useState<SessionType>('PREP');
   const [phase, setPhase] = useState<TimerPhase>('IDLE');
   const [direction, setDirection] = useState<TimerDirection>('DOWN');
-  const [preStartCount, setPreStartCount] = useState(3);
   
   const [prepConfig, setPrepConfig] = useState<{target: number, mode: TimerDirection}>({ target: DEFAULT_PREP_TIME_MS, mode: 'DOWN' });
   const [raceConfig, setRaceConfig] = useState<{target: number, mode: TimerDirection}>({ target: DEFAULT_RACE_TIME_MS, mode: 'DOWN' });
@@ -219,26 +218,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     };
   }, [phase, tick]);
 
-  // Pre-Start Logic
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (phase === 'PRE_START') {
-      if (preStartCount > 0) {
-        interval = setInterval(() => {
-          setPreStartCount((prev) => prev - 1);
-        }, 1000);
-      } else if (preStartCount === 0) {
-        // Tampilkan "GO!" sejenak, lalu jalankan
-        interval = setTimeout(() => {
-          setPhase('RUNNING');
-          setPreStartCount(-1);
-        }, 500);
-      }
-    }
-    return () => {
-      if (interval) clearInterval(interval as any);
-    };
-  }, [phase, preStartCount]);
+  // Pre-Start logic removed for instant start
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -273,7 +253,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         return;
       }
 
-      if (isSettingTime || status === 'saving' || isHistoryModalOpen || phase === 'PRE_START') return; 
+      if (isSettingTime || status === 'saving' || isHistoryModalOpen) return; 
       
       if (key === 'h' && (phase === 'IDLE' || phase === 'FINISHED')) {
         setIsHistoryModalOpen(true);
@@ -292,15 +272,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
           if (phase === 'RUNNING') {
             setPhase('IDLE');
           } else if (phase === 'IDLE') {
-            // Cek apakah fresh start (mulai dari ujung sesuai mode)
-            const isFreshStart = (direction === 'DOWN' && remainingTime === targetTime) || 
-                                 (direction === 'UP' && remainingTime === 0);
-            if (isFreshStart) {
-              setPreStartCount(3);
-              setPhase('PRE_START');
-            } else {
-              setPhase('RUNNING');
-            }
+            setPhase('RUNNING');
           }
         }
       } else if (key === 'f') {
@@ -419,19 +391,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
             <div className="w-full flex items-center justify-center relative">
               <div className="bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw]">
                 
-                {phase === 'PRE_START' ? (
-                  <div className="text-center animate-in zoom-in-50 fade-in duration-500 z-10">
-                    <h1 className="text-[15vw] font-black tracking-tighter text-white font-digital-text italic leading-none">
-                      {preStartCount > 0 ? preStartCount : 'GO!'}
-                    </h1>
-                  </div>
-                ) : (
                   <div className={`text-center transition-all duration-500 z-10 ${isSettingTime ? 'opacity-10 blur-sm scale-95' : 'opacity-100 scale-100'}`}>
                     <h1 className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
                       {formatTime(remainingTime)}
                     </h1>
                   </div>
-                )}
               </div>
             </div>
             
@@ -447,7 +411,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         </div>
 
       {/* Indikator Status Pause/Running - Dipindah ke Kanan Bawah */}
-      {phase !== 'FINISHED' && !isSettingTime && phase !== 'PRE_START' && status === 'idle' && (
+      {phase !== 'FINISHED' && !isSettingTime && status === 'idle' && (
         <div className="absolute bottom-8 right-8 flex space-x-6 items-center z-10 opacity-70">
           <div className="flex items-center space-x-3 bg-zinc-900/80 backdrop-blur px-5 py-2.5 rounded-lg border border-zinc-800 shadow-2xl">
             <span className={`w-2.5 h-2.5 rounded-sm ${phase === 'RUNNING' ? 'bg-emerald-500 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.7)]' : 'bg-amber-500'}`}></span>

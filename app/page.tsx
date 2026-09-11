@@ -33,7 +33,7 @@ const shortcuts = [
   {
     key: 'Space',
     action: 'Mulai / Jeda Timer',
-    detail: 'Jika timer belum pernah dijalankan (posisi awal), akan memicu hitung mundur 3-2-1-GO! terlebih dahulu. Jika sudah berjalan, akan menjeda.',
+    detail: 'Menjalankan timer secara instan (tanpa delay). Jika timer sedang berjalan, menekan tombol ini akan menjedanya.',
     color: 'bg-blue-950/50 border-blue-800/60',
     textColor: 'text-blue-200',
     keyColor: 'bg-blue-600 text-white shadow-[0_0_12px_rgba(37,99,235,0.4)]',
@@ -149,7 +149,7 @@ const quicksteps = [
   {
     num: '05',
     title: 'Mulai Sesi (Tombol Space)',
-    desc: 'Saat tim siap, tekan Spacebar. Sistem akan menampilkan hitung mundur 3 → 2 → 1 → GO! sebelum timer aktif berjalan. Timer kemudian berjalan otomatis.',
+    desc: 'Saat tim siap, tekan Spacebar. Timer akan langsung berjalan secara instan dari awal (tanpa hitung mundur 3-2-1).',
     icon: <Play className="w-5 h-5" />,
     accent: 'from-emerald-500 to-emerald-700',
     action: null,
@@ -411,8 +411,8 @@ export default function HomePage() {
                 iconColor: 'text-blue-400',
               },
               {
-                title: 'Hitung Mundur 3-2-1-GO! adalah Otomatis',
-                body: 'Jangan panik saat Anda pertama kali menekan Spacebar dan timer belum langsung jalan. Sistem akan menampilkan layar hitung mundur 3 → 2 → 1 → GO! selama sekitar 3 detik. Timer akan aktif secara otomatis setelah "GO!" ditampilkan.',
+                title: 'Timer Dimulai Secara Instan',
+                body: 'Timer sekarang berjalan secara instan tanpa delay atau hitung mundur 3-2-1 saat Anda menekan tombol Spacebar. Pastikan aba-aba ke tim sudah dilakukan sebelum Anda menekan tombol mulai.',
                 accent: 'border-slate-700/50 bg-slate-800/30',
                 iconColor: 'text-slate-400',
               },
