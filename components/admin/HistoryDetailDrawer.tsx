@@ -206,7 +206,8 @@ export default function HistoryDetailDrawer({ isOpen, onClose, team }: HistoryDe
       startY: 50,
       head: [tableColumn],
       body: tableRows,
-      theme: 'striped', // Striped natively removes vertical borders for a cleaner look
+      theme: 'grid', // Menggunakan grid untuk mendapatkan border horisontal & vertikal
+      margin: { left: 20, right: 20 }, // Menambahkan margin agar tabel tidak full-width (lebih compact)
       headStyles: {
         fillColor: [15, 23, 42], // #0F172A
         textColor: [255, 255, 255],
@@ -214,23 +215,27 @@ export default function HistoryDetailDrawer({ isOpen, onClose, team }: HistoryDe
         halign: 'center',
         valign: 'middle',
         fontSize: 9,
+        lineWidth: 0.1,
+        lineColor: [15, 23, 42], // Match head bg or use light gray
       },
       styles: {
-        fontSize: 10,
-        cellPadding: 6, // More breathing room
+        fontSize: 9,
+        cellPadding: 4, // Padding diturunkan agar lebih seimbang
         textColor: [51, 65, 85],
         valign: 'middle',
+        lineWidth: 0.1,
+        lineColor: [203, 213, 225], // Border abu-abu terang (grid lines explicit)
       },
       alternateRowStyles: {
-        fillColor: [248, 250, 252], // #F8FAFC
+        fillColor: [248, 250, 252], // Zebra striping
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 10 }, // No. (Narrow to prevent wrapping)
-        1: { halign: 'left', cellWidth: 42 },   // Date & Time
-        2: { halign: 'center', cellWidth: 26 }, // Phase
-        3: { halign: 'center', cellWidth: 30 }, // Mode (Wide enough for STOPWATCH)
-        4: { halign: 'center', cellWidth: 35 }, // Target Time
-        5: { halign: 'center' },                // Actual Time Used (Flexible)
+        0: { halign: 'center', cellWidth: 10 }, 
+        1: { halign: 'left', cellWidth: 40 },
+        2: { halign: 'center', cellWidth: 26 }, 
+        3: { halign: 'center', cellWidth: 28 }, 
+        4: { halign: 'center', cellWidth: 32 }, 
+        5: { halign: 'center', cellWidth: 34 }, 
       },
     });
 
