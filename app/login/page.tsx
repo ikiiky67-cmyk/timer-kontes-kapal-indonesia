@@ -61,7 +61,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-4xl flex flex-col md:flex-row bg-white rounded-[20px] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
 
         {/* Sisi Kiri: Cover Art (Gambar Kapal KKI2) */}
-        <div className="relative w-full md:w-5/12 h-[250px] md:h-auto flex-shrink-0">
+        <div className="relative w-full md:w-1/2 h-[250px] md:h-auto flex-shrink-0">
           <Image
             src="/assets/img/KKI2.jpeg"
             alt="Kontes Kapal Indonesia"
@@ -73,7 +73,7 @@ export default function LoginPage() {
         </div>
 
         {/* Sisi Kanan: Form Login */}
-        <div className="w-full md:w-7/12 p-6 sm:p-8 lg:p-12 flex flex-col justify-center bg-slate-50/50">
+        <div className="w-full md:w-1/2 p-6 sm:p-8 lg:p-12 flex flex-col justify-center bg-slate-50/50">
           <div className="mb-6">
             {/* Header (Logo + Title) */}
             <div className="flex items-center gap-3 mb-4">
