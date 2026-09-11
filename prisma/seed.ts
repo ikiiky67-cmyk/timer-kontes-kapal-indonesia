@@ -15,7 +15,7 @@ async function main() {
   })
 
   // Akun Operator Divisi
-  const divisions = ['ROV', 'ASV', 'ERC', 'FERC'] as const
+  const divisions = ['ROV', 'ASV', 'ERC', 'FERC', 'IDK', 'ISPK'] as const
   
   for (const division of divisions) {
     await prisma.user.upsert({

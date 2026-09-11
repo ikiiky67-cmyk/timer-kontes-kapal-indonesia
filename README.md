@@ -52,6 +52,8 @@ Dibangun dengan Next.js 15 · Prisma ORM · MySQL · TailwindCSS
 - **ASV** — Autonomous Surface Vehicle
 - **ERC** — Electric Remote Control
 - **FERC** — Free Electric Remote Control
+- **IDK** — Inovasi Desain dan Konstruksi
+- **ISPK** — Inovasi Sistem Permesinan dan Kelistrikan
 
 ### 📊 Fitur Admin
 - Manajemen tim (tambah, edit, hapus)
@@ -117,7 +119,7 @@ timer-kontes-kapal-indonesia/
 enum Role       { ADMIN | OPERATOR }
 
 // Divisi kompetisi
-enum Division   { ROV | ASV | ERC | FERC }
+enum Division   { ROV | ASV | ERC | FERC | IDK | ISPK }
 
 // Status tim
 enum TeamStatus { IDLE | PREPARING | RACING }

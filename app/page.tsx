@@ -117,7 +117,7 @@ const quicksteps = [
   {
     num: '01',
     title: 'Login ke Sistem',
-    desc: 'Buka halaman Login dan masukkan username serta password akun Operator yang diberikan oleh Admin. Setiap akun Operator sudah terikat ke satu Divisi tertentu (ROV, ASV, ERC, atau FERC).',
+    desc: 'Buka halaman Login dan masukkan username serta password akun Operator yang diberikan oleh Admin. Setiap akun Operator sudah terikat ke satu Divisi tertentu (ROV, ASV, ERC, FERC, IDK, atau ISPK).',
     icon: <LogIn className="w-5 h-5" />,
     accent: 'from-blue-500 to-blue-700',
     action: { label: 'Pergi ke Login', href: '/login' },
@@ -250,7 +250,7 @@ export default function HomePage() {
             {[
               { label: 'Pintasan Keyboard', value: '6', color: 'text-blue-400', glow: 'from-blue-500/20 to-transparent' },
               { label: 'Mode Timer', value: '3', color: 'text-emerald-400', glow: 'from-emerald-500/20 to-transparent' },
-              { label: 'Divisi Kompetisi', value: '4', color: 'text-violet-400', glow: 'from-violet-500/20 to-transparent' },
+              { label: 'Divisi Kompetisi', value: '6', color: 'text-violet-400', glow: 'from-violet-500/20 to-transparent' },
               { label: 'Presisi Waktu', value: 'ms', color: 'text-amber-400', glow: 'from-amber-500/20 to-transparent' },
             ].map((s) => (
               <div
@@ -275,11 +275,10 @@ export default function HomePage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all duration-200 border ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold whitespace-nowrap transition-all duration-200 border ${activeTab === tab.id
                   ? 'bg-blue-600 text-white border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.3)]'
                   : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200 backdrop-blur-md'
-              }`}
+                }`}
             >
               {tab.icon}
               {tab.label}

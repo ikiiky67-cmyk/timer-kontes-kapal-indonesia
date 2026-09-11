@@ -17,6 +17,8 @@ enum Division {
   ASV
   ERC
   FERC
+  IDK
+  ISPK
 }
 
 enum TeamStatus {
