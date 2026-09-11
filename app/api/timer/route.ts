@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { teamId, remainingTime, targetTime, type = 'RACE' } = body;
+    const { teamId, remainingTime, targetTime, type = 'RACE', mode = 'DOWN' } = body;
 
     if (!teamId || remainingTime === undefined || targetTime === undefined) {
       return NextResponse.json(
@@ -25,6 +25,7 @@ export async function POST(req: Request) {
             teamId,
             targetTime,
             remainingTime,
+            mode,
           },
         });
       } else {
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
             teamId,
             targetTime,
             remainingTime,
+            mode,
           },
         });
       }

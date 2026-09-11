@@ -3,8 +3,7 @@ import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Division } from '@prisma/client';
-import { LogOut } from 'lucide-react';
-import { logoutAction } from '@/app/actions/auth';
+import SidebarLayout from '@/components/layout/SidebarLayout';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,39 +24,20 @@ export default async function OperatorDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-6 md:p-12">
-      <div className="max-w-6xl mx-auto space-y-10">
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
+    <SidebarLayout role="operator" division={division}>
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 px-1">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900">Dashboard Operator</h1>
-              <span className="bg-indigo-100 text-indigo-700 py-1 px-3 rounded-full text-xs font-bold tracking-widest">
-                {division}
-              </span>
-            </div>
-            <p className="text-zinc-500 text-sm md:text-base">Kelola tim dan jalankan timer khusus untuk divisi Anda.</p>
+            <h2 className="text-[22px] font-extrabold text-slate-800 tracking-tight">Daftar Tim Divisi {division}</h2>
+            <p className="text-[13px] font-medium text-slate-500 mt-1">Pilih tim yang bertanding dan jalankan timer.</p>
           </div>
-          <form action={logoutAction}>
-            <button 
-              type="submit"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100"
-            >
-              <LogOut className="w-4 h-4" />
-              Keluar
-            </button>
-          </form>
-        </header>
-
-        <div>
-          <div className="flex items-center justify-between mb-4 px-1">
-            <h2 className="text-lg font-semibold text-zinc-900">Daftar Tim Divisi {division}</h2>
-            <span className="text-sm font-medium text-zinc-500">
-              Total: {divisionTeams.length} Tim
-            </span>
+          <div className="bg-slate-800 text-white rounded-2xl px-5 py-3 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col justify-center items-center shrink-0">
+            <span className="text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-0.5">Total Tim</span>
+            <span className="text-xl font-black leading-none">{divisionTeams.length}</span>
           </div>
-          <OperatorTeamTable initialTeams={divisionTeams} currentDivision={division} />
         </div>
+        <OperatorTeamTable initialTeams={divisionTeams} currentDivision={division} />
       </div>
-    </div>
+    </SidebarLayout>
   );
 }

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Division, Team, TeamStatus } from '@prisma/client';
 import { motion, AnimatePresence } from 'motion/react';
-import { Pencil, Trash2, Check, X, Loader2, TimerReset, Lock, Unlock } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Loader2, TimerReset, Lock, Unlock, Search, FilterX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AlertModal, { AlertType } from '@/components/ui/AlertModal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -15,6 +15,10 @@ export default function OperatorTeamTable({ initialTeams, currentDivision }: { i
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [confirmUnlockId, setConfirmUnlockId] = useState<string | null>(null);
+  
+  // Search and Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'All' | TeamStatus>('All');
   
   // Alert State
   const [alertState, setAlertState] = useState<{
@@ -107,142 +111,217 @@ export default function OperatorTeamTable({ initialTeams, currentDivision }: { i
 
   if (teams.length === 0) {
     return (
-      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden p-12 text-center text-zinc-500 text-sm shadow-sm">
+      <div className="bg-white border border-slate-100/80 rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-12 text-center text-slate-500 text-sm">
         Belum ada tim yang terdaftar di divisi {currentDivision}.
       </div>
     );
   }
 
+  const filteredTeams = useMemo(() => {
+    return teams.filter(team => {
+      const matchesSearch = 
+        team.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        team.institution.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'All' || team.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [teams, searchQuery, statusFilter]);
+
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-zinc-50 border-b border-zinc-200 text-sm font-medium text-zinc-500">
-              <th className="px-6 py-4">Nama Tim</th>
-              <th className="px-6 py-4">Asal Institusi</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100">
-            <AnimatePresence>
-              {teams.map((team) => (
-                <motion.tr 
-                  key={team.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, backgroundColor: '#fee2e2' }}
-                  className="hover:bg-zinc-50/50 transition-colors group"
-                >
-                  {editingId === team.id && editForm ? (
-                    <>
-                      <td className="px-6 py-3">
-                        <input
-                          type="text"
-                          value={editForm.name}
-                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-zinc-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                        />
-                      </td>
-                      <td className="px-6 py-3">
-                        <input
-                          type="text"
-                          value={editForm.institution}
-                          onChange={(e) => setEditForm({ ...editForm, institution: e.target.value })}
-                          className="w-full px-3 py-1.5 border border-zinc-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                        />
-                      </td>
-                      <td className="px-6 py-3">
-                         <span className="text-zinc-400 text-xs">-</span>
-                      </td>
-                      <td className="px-6 py-3 text-right space-x-2">
+    <div className="flex flex-col gap-4">
+      {/* DATA CONTROL BAR */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white border border-slate-100/80 rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.02)] p-4">
+        {/* Search */}
+        <div className="relative w-full md:w-auto md:flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input 
+            type="text" 
+            placeholder="Cari nama tim atau institusi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-50 border border-transparent focus:bg-white focus:border-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-100 rounded-xl pl-10 pr-4 py-2.5 text-[14px] font-semibold text-slate-800 transition-all placeholder:text-slate-400"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {(['All', ...Object.values(TeamStatus)] as const).map(status => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status as any)}
+              className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-[12px] font-bold tracking-wide transition-all border ${
+                statusFilter === status 
+                  ? 'bg-slate-800 text-white border-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.1)]'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              {status === 'All' ? 'Semua Status' : status}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <AnimatePresence mode="popLayout">
+        {filteredTeams.length > 0 ? (
+          filteredTeams.map((team) => (
+            <motion.div 
+            key={team.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white border border-slate-100/80 rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] p-5 hover:-translate-y-0.5 transition-all duration-300 group"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              
+              {/* Left Side: Data Fields */}
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 flex-1">
+                
+                {editingId === team.id && editForm ? (
+                  <>
+                    <div className="flex-1 space-y-1.5">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nama Tim</label>
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="w-full px-4 py-2 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-100 text-[14px] font-semibold text-slate-800 transition-all"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Institusi</label>
+                      <input
+                        type="text"
+                        value={editForm.institution}
+                        onChange={(e) => setEditForm({ ...editForm, institution: e.target.value })}
+                        className="w-full px-4 py-2 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-100 text-[14px] font-semibold text-slate-800 transition-all"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-[1.5] space-y-1">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nama Tim</h3>
+                      <div className="text-[15px] font-bold text-slate-800 truncate">{team.name}</div>
+                    </div>
+                    
+                    <div className="flex-1 space-y-1">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Institusi</h3>
+                      <div className="text-[14px] font-medium text-slate-600 truncate">{team.institution}</div>
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</h3>
+                      <div className="flex items-center">
+                        {team.status === TeamStatus.IDLE ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                            IDLE
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            {team.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+              </div>
+
+              {/* Right Side: Actions */}
+              <div className="flex items-center justify-end gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100/80">
+                {editingId === team.id && editForm ? (
+                  <div className="flex items-center gap-2">
+                    {loadingId === team.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-slate-400 mx-2" />
+                    ) : (
+                      <>
+                        <button onClick={() => handleSaveEdit(team.id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors">
+                          <Check className="w-5 h-5" />
+                        </button>
+                        <button onClick={handleCancelEdit} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                          <X className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* Only show pencil if IDLE */}
+                    {team.status === TeamStatus.IDLE && (
+                      <div className="md:opacity-0 group-hover:opacity-100 transition-opacity">
                         {loadingId === team.id ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-zinc-400 inline" />
+                          <Loader2 className="w-5 h-5 animate-spin text-slate-400 mr-2 inline" />
+                        ) : (
+                          <button onClick={() => handleEditClick(team)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors" title="Edit Tim">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {team.status === TeamStatus.IDLE ? (
+                      <button 
+                        onClick={() => {
+                          setIsNavigating(true);
+                          router.push(`/timer/${team.id}`);
+                        }}
+                        disabled={loadingId === team.id}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-50 text-teal-700 hover:bg-teal-500 hover:text-white rounded-xl text-sm font-bold transition-colors"
+                      >
+                        <TimerReset className="w-4 h-4" />
+                        Buka Timer
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => setConfirmUnlockId(team.id)}
+                        disabled={loadingId === team.id}
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl text-sm font-bold transition-all group/btn w-[180px]"
+                      >
+                        {loadingId === team.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <>
-                            <button onClick={() => handleSaveEdit(team.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors">
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button onClick={handleCancelEdit} className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded transition-colors">
-                              <X className="w-4 h-4" />
-                            </button>
+                            <Lock className="w-4 h-4 group-hover/btn:hidden" />
+                            <Unlock className="w-4 h-4 hidden group-hover/btn:block" />
                           </>
                         )}
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-zinc-900">{team.name}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-zinc-500">{team.institution}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {team.status === TeamStatus.IDLE ? (
-                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">IDLE</span>
-                        ) : (
-                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">{team.status}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end items-center gap-3">
-                          {team.status === TeamStatus.IDLE ? (
-                            <button 
-                              onClick={() => {
-                                setIsNavigating(true);
-                                router.push(`/timer/${team.id}`);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-medium transition-colors"
-                            >
-                              <TimerReset className="w-3.5 h-3.5" />
-                              Buka Timer
-                            </button>
-                          ) : (
-                             <button 
-                              onClick={() => setConfirmUnlockId(team.id)}
-                              disabled={loadingId === team.id}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-medium transition-colors group w-[160px] justify-center"
-                            >
-                              {loadingId === team.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <>
-                                  <Lock className="w-3.5 h-3.5 group-hover:hidden" />
-                                  <Unlock className="w-3.5 h-3.5 hidden group-hover:block" />
-                                </>
-                              )}
-                              <span className="group-hover:hidden">Sedang Digunakan</span>
-                              <span className="hidden group-hover:inline">Paksa Buka Kunci</span>
-                            </button>
-                          )}
-                          
-                          {loadingId === team.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-zinc-400 inline" />
-                          ) : (
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {team.status === TeamStatus.IDLE ? (
-                                <button onClick={() => handleEditClick(team)} className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Edit Tim">
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button disabled className="p-1.5 text-zinc-300 cursor-not-allowed" title="Tim sedang digunakan">
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </>
-                  )}
-                </motion.tr>
-              ))}
-            </AnimatePresence>
-          </tbody>
-        </table>
-      </div>
+                        <span className="group-hover/btn:hidden">Sedang Digunakan</span>
+                        <span className="hidden group-hover/btn:inline">Paksa Buka Kunci</span>
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+
+            </div>
+          </motion.div>
+          ))
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white border border-slate-100/80 rounded-[24px] p-12 flex flex-col items-center justify-center text-center shadow-[0_4px_20px_rgba(0,0,0,0.02)] mt-2"
+          >
+            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 mb-4 border border-slate-100">
+              <Search className="w-6 h-6" />
+            </div>
+            <p className="text-[15px] font-bold text-slate-800 mb-1">Tidak ada tim yang ditemukan</p>
+            <p className="text-[13px] text-slate-500 max-w-sm mb-6">Pencarian untuk "{searchQuery}" atau saringan status "{statusFilter === 'All' ? 'Semua Status' : statusFilter}" tidak memberikan hasil.</p>
+            <button 
+              onClick={() => { setSearchQuery(''); setStatusFilter('All'); }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-200 hover:border-slate-800 rounded-xl text-[13px] font-bold transition-all"
+            >
+              <FilterX className="w-4 h-4" />
+              Reset Pencarian
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AlertModal 
         isOpen={alertState.isOpen}

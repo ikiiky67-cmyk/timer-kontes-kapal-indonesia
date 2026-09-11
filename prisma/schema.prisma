@@ -47,6 +47,7 @@ model PrepHistory {
   teamId        String
   targetTime    Int
   remainingTime Int
+  mode          String   @default("DOWN")
   createdAt     DateTime @default(now())
 }
 
@@ -55,5 +56,6 @@ model RaceHistory {
   teamId        String
   targetTime    Int
   remainingTime Int
+  mode          String   @default("DOWN")
   createdAt     DateTime @default(now())
 }
