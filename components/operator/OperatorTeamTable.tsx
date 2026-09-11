@@ -176,11 +176,11 @@ export default function OperatorTeamTable({ initialTeams, currentDivision }: { i
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               
               {/* Left Side: Data Fields */}
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 flex-1 items-center">
                 
                 {editingId === team.id && editForm ? (
                   <>
-                    <div className="flex-1 space-y-1.5">
+                    <div className="md:col-span-4 space-y-1.5 min-w-0">
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nama Tim</label>
                       <input
                         type="text"
@@ -189,7 +189,7 @@ export default function OperatorTeamTable({ initialTeams, currentDivision }: { i
                         className="w-full px-4 py-2 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-100 text-[14px] font-semibold text-slate-800 transition-all"
                       />
                     </div>
-                    <div className="flex-1 space-y-1.5">
+                    <div className="md:col-span-5 space-y-1.5 min-w-0">
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Institusi</label>
                       <input
                         type="text"
@@ -198,20 +198,22 @@ export default function OperatorTeamTable({ initialTeams, currentDivision }: { i
                         className="w-full px-4 py-2 bg-slate-50 border border-transparent rounded-xl focus:bg-white focus:border-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-100 text-[14px] font-semibold text-slate-800 transition-all"
                       />
                     </div>
+                    {/* Placeholder kosong untuk Status saat mode edit */}
+                    <div className="hidden md:block md:col-span-3"></div>
                   </>
                 ) : (
                   <>
-                    <div className="flex-[1.5] space-y-1">
+                    <div className="md:col-span-4 space-y-1 min-w-0">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nama Tim</h3>
-                      <div className="text-[15px] font-bold text-slate-800 truncate">{team.name}</div>
+                      <div className="text-[15px] font-bold text-slate-800 truncate" title={team.name}>{team.name}</div>
                     </div>
                     
-                    <div className="flex-1 space-y-1">
+                    <div className="md:col-span-5 space-y-1 min-w-0">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Institusi</h3>
-                      <div className="text-[14px] font-medium text-slate-600 truncate">{team.institution}</div>
+                      <div className="text-[14px] font-medium text-slate-600 truncate" title={team.institution}>{team.institution}</div>
                     </div>
                     
-                    <div className="flex-1 space-y-2">
+                    <div className="md:col-span-3 space-y-2">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</h3>
                       <div className="flex items-center">
                         {team.status === TeamStatus.IDLE ? (
