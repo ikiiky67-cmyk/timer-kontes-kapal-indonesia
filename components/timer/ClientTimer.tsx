@@ -17,6 +17,15 @@ interface UnifiedHistory {
 const DEFAULT_PREP_TIME_MS = 5 * 60 * 1000;
 const DEFAULT_RACE_TIME_MS = 15 * 60 * 1000;
 
+const formatTime = (ms: number) => {
+  const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const milliseconds = Math.floor((Math.max(0, ms) % 1000) / 10);
+
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+};
+
 interface ClientTimerProps {
   teamId: string;
   teamName: string;
@@ -35,7 +44,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const [prepConfig, setPrepConfig] = useState<{target: number, mode: TimerDirection}>({ target: DEFAULT_PREP_TIME_MS, mode: 'DOWN' });
   const [raceConfig, setRaceConfig] = useState<{target: number, mode: TimerDirection}>({ target: DEFAULT_RACE_TIME_MS, mode: 'DOWN' });
 
-  const [remainingTime, setRemainingTime] = useState<number>(DEFAULT_PREP_TIME_MS);
+  const remainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
+  const startTimeRef = useRef<number>(0);
+  const startRemainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
+  const timerDisplayRef = useRef<HTMLHeadingElement>(null);
+  
   const [targetTime, setTargetTime] = useState<number>(DEFAULT_PREP_TIME_MS);
   
   const [isSettingTime, setIsSettingTime] = useState(false);
@@ -102,7 +115,6 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   }, [teamId]);
 
   const reqRef = useRef<number | null>(null);
-  const lastUpdateRef = useRef<number>(Date.now());
   const isSavingRef = useRef(false);
 
   const lockAsRacing = useCallback(async () => {
@@ -154,7 +166,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
           setSession('RACE');
           setDirection(raceConfig.mode);
           setTargetTime(raceConfig.target);
-          setRemainingTime(raceConfig.mode === 'DOWN' ? raceConfig.target : 0);
+          const newRemaining = raceConfig.mode === 'DOWN' ? raceConfig.target : 0;
+          remainingTimeRef.current = newRemaining;
+          if (timerDisplayRef.current) {
+            timerDisplayRef.current.textContent = formatTime(newRemaining);
+          }
           setPhase('IDLE');
           setStatus('idle');
           isSavingRef.current = false;
@@ -175,37 +191,50 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const tick = useCallback(() => {
     if (phase !== 'RUNNING') return;
 
-    const now = Date.now();
-    const delta = now - lastUpdateRef.current;
-    lastUpdateRef.current = now;
+    const now = performance.now();
+    const elapsed = now - startTimeRef.current;
 
-    setRemainingTime((prev) => {
-      if (direction === 'DOWN') {
-        const nextTime = prev - delta;
-        if (nextTime <= 0) {
-          finishTimer(0);
-          return 0;
+    let currentRemaining: number;
+
+    if (direction === 'DOWN') {
+      currentRemaining = startRemainingTimeRef.current - elapsed;
+      if (currentRemaining <= 0) {
+        currentRemaining = 0;
+        remainingTimeRef.current = currentRemaining;
+        if (timerDisplayRef.current) {
+          timerDisplayRef.current.textContent = formatTime(currentRemaining);
         }
-        return nextTime;
-      } else if (direction === 'UP') {
-        const nextTime = prev + delta;
-        if (nextTime >= targetTime) {
-          finishTimer(targetTime);
-          return targetTime;
-        }
-        return nextTime;
-      } else {
-        // STOPWATCH
-        return prev + delta;
+        finishTimer(0);
+        return;
       }
-    });
+    } else if (direction === 'UP') {
+      currentRemaining = startRemainingTimeRef.current + elapsed;
+      if (currentRemaining >= targetTime) {
+        currentRemaining = targetTime;
+        remainingTimeRef.current = currentRemaining;
+        if (timerDisplayRef.current) {
+          timerDisplayRef.current.textContent = formatTime(currentRemaining);
+        }
+        finishTimer(targetTime);
+        return;
+      }
+    } else {
+      // STOPWATCH
+      currentRemaining = startRemainingTimeRef.current + elapsed;
+    }
+
+    remainingTimeRef.current = currentRemaining;
+    if (timerDisplayRef.current) {
+      timerDisplayRef.current.textContent = formatTime(currentRemaining);
+    }
 
     reqRef.current = requestAnimationFrame(tick);
   }, [phase, direction, targetTime, finishTimer]);
 
   useEffect(() => {
     if (phase === 'RUNNING') {
-      lastUpdateRef.current = Date.now();
+      startTimeRef.current = performance.now();
+      startRemainingTimeRef.current = remainingTimeRef.current;
       reqRef.current = requestAnimationFrame(tick);
     } else {
       if (reqRef.current) {
@@ -277,14 +306,14 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         }
       } else if (key === 'f') {
         if (phase !== 'FINISHED') {
-          finishTimer(remainingTime);
+          finishTimer(remainingTimeRef.current);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSettingTime, phase, remainingTime, finishTimer, status, handleExit, isHistoryModalOpen, fetchHistory, alertState.isOpen, direction, targetTime]);
+  }, [isSettingTime, phase, finishTimer, status, handleExit, isHistoryModalOpen, fetchHistory, alertState.isOpen, direction, targetTime]);
 
   const [modalPrepMode, setModalPrepMode] = useState<TimerDirection>('DOWN');
   const [modalRaceMode, setModalRaceMode] = useState<TimerDirection>('DOWN');
@@ -316,25 +345,26 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     if (session === 'PREP') {
       setDirection(prepMode);
       setTargetTime(newPrepTarget);
-      setRemainingTime(prepMode === 'DOWN' ? newPrepTarget : 0);
+      const newRemaining = prepMode === 'DOWN' ? newPrepTarget : 0;
+      remainingTimeRef.current = newRemaining;
+      if (timerDisplayRef.current) {
+        timerDisplayRef.current.textContent = formatTime(newRemaining);
+      }
     } else {
       setDirection(raceMode);
       setTargetTime(newRaceTarget);
-      setRemainingTime(raceMode === 'DOWN' ? newRaceTarget : 0);
+      const newRemaining = raceMode === 'DOWN' ? newRaceTarget : 0;
+      remainingTimeRef.current = newRemaining;
+      if (timerDisplayRef.current) {
+        timerDisplayRef.current.textContent = formatTime(newRemaining);
+      }
     }
     
     setPhase('IDLE');
     setIsSettingTime(false);
   };
 
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    const milliseconds = Math.floor((Math.max(0, ms) % 1000) / 10);
-
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
-  };
+// formatTime dipindahkan ke luar komponen
 
   return (
     <>
@@ -392,8 +422,8 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
               <div className="bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw]">
                 
                   <div className={`text-center transition-all duration-500 z-10 ${isSettingTime ? 'opacity-10 blur-sm scale-95' : 'opacity-100 scale-100'}`}>
-                    <h1 className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
-                      {formatTime(remainingTime)}
+                    <h1 ref={timerDisplayRef} className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
+                      {formatTime(remainingTimeRef.current)}
                     </h1>
                   </div>
               </div>
