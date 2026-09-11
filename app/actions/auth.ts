@@ -3,6 +3,8 @@
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 
+import bcrypt from 'bcryptjs';
+
 export async function loginAction(formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
@@ -12,7 +14,13 @@ export async function loginAction(formData: FormData) {
     where: { username },
   });
 
-  if (!user || user.password !== password) {
+  if (!user) {
+    return { success: false, error: 'Username atau password salah.' };
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordValid) {
     return { success: false, error: 'Username atau password salah.' };
   }
 
@@ -26,10 +34,10 @@ export async function loginAction(formData: FormData) {
     path: '/',
   });
 
-  return { 
-    success: true, 
-    role: user.role.toLowerCase(), 
-    division: user.division 
+  return {
+    success: true,
+    role: user.role.toLowerCase(),
+    division: user.division
   };
 }
 
