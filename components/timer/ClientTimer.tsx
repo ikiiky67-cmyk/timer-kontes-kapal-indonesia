@@ -210,7 +210,20 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const finishTimer = useCallback(async () => {
     if (phase === 'FINISHED' || isSavingRef.current) return;
 
-    const finalElapsedTime = Math.max(0, elapsedMsRef.current);
+    let finalElapsedTime = Math.max(0, elapsedMsRef.current);
+    if (phase === 'RUNNING') {
+      const elapsedSinceStart = performance.now() - startTimeRef.current;
+      const currentRemaining = direction === 'DOWN'
+        ? Math.max(0, startRemainingTimeRef.current - elapsedSinceStart)
+        : Math.min(targetTimeRef.current, startRemainingTimeRef.current + elapsedSinceStart);
+
+      finalElapsedTime = direction === 'DOWN'
+        ? targetTimeRef.current - currentRemaining
+        : currentRemaining;
+      elapsedMsRef.current = finalElapsedTime;
+      remainingTimeRef.current = currentRemaining;
+    }
+
     const finalRemainingTime = direction === 'DOWN'
       ? Math.max(0, targetTimeRef.current - finalElapsedTime)
       : finalElapsedTime;
@@ -424,9 +437,6 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         setDirection(selectedConfig.mode);
         setTargetTime(selectedConfig.target);
         targetTimeRef.current = selectedConfig.target;
-        remainingTimeRef.current = selectedSession === 'PREP' ? prepRemaining : raceRemaining;
-        elapsedMsRef.current = 0;
-        startRemainingTimeRef.current = remainingTimeRef.current;
         if (phase !== 'FINISHED') {
           if (phase === 'RUNNING') {
             setPhase('IDLE');
