@@ -600,7 +600,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
               </div>
 
               <div className="w-full flex items-center justify-center relative">
-                <div className={`bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw] border transition-all duration-300 ${activeFocus === 'PREPARATION' ? 'border-[#1f7cff] shadow-[0_0_30px_rgba(31,124,255,0.25)]' : 'border-zinc-800'}`}>
+                <div className="bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw] border border-zinc-800">
                   <div className={`text-center transition-all duration-500 z-10 ${isSettingTime ? 'opacity-10 blur-sm scale-95' : 'opacity-100 scale-100'}`}>
                     <h1 ref={timerDisplayRef} className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
                       {formatTime(focusRemaining)}
