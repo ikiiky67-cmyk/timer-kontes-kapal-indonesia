@@ -449,24 +449,40 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     const raceSecs = parseInt(formData.get('race_seconds') as string || '0', 10);
     const newRaceTarget = (raceMins * 60 + raceSecs) * 1000;
     
+    const nextPrepRemaining = prepMode === 'DOWN' ? newPrepTarget : 0;
+    const nextRaceRemaining = raceMode === 'DOWN' ? newRaceTarget : 0;
+
     setPrepConfig({ target: newPrepTarget, mode: prepMode });
     setRaceConfig({ target: newRaceTarget, mode: raceMode });
-    
-    if (session === 'PREP') {
-      setDirection(prepMode);
-      setTargetTime(newPrepTarget);
-      const newRemaining = prepMode === 'DOWN' ? newPrepTarget : 0;
+    setPrepRemaining(nextPrepRemaining);
+    setRaceRemaining(nextRaceRemaining);
+
+    if (isSplitScreen) {
+      const activeSessionToApply = activeFocus === 'PREPARATION' ? 'PREP' : 'RACE';
+      const currentConfig = activeSessionToApply === 'PREP' ? { target: newPrepTarget, mode: prepMode } : { target: newRaceTarget, mode: raceMode };
+      setDirection(currentConfig.mode);
+      setTargetTime(currentConfig.target);
+      const newRemaining = currentConfig.mode === 'DOWN' ? currentConfig.target : 0;
       remainingTimeRef.current = newRemaining;
+      startRemainingTimeRef.current = newRemaining;
       if (timerDisplayRef.current) {
         timerDisplayRef.current.textContent = formatTime(newRemaining);
+      }
+    } else if (session === 'PREP') {
+      setDirection(prepMode);
+      setTargetTime(newPrepTarget);
+      remainingTimeRef.current = nextPrepRemaining;
+      startRemainingTimeRef.current = nextPrepRemaining;
+      if (timerDisplayRef.current) {
+        timerDisplayRef.current.textContent = formatTime(nextPrepRemaining);
       }
     } else {
       setDirection(raceMode);
       setTargetTime(newRaceTarget);
-      const newRemaining = raceMode === 'DOWN' ? newRaceTarget : 0;
-      remainingTimeRef.current = newRemaining;
+      remainingTimeRef.current = nextRaceRemaining;
+      startRemainingTimeRef.current = nextRaceRemaining;
       if (timerDisplayRef.current) {
-        timerDisplayRef.current.textContent = formatTime(newRemaining);
+        timerDisplayRef.current.textContent = formatTime(nextRaceRemaining);
       }
     }
     
@@ -490,35 +506,37 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       `}} />
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8 relative overflow-hidden select-none">
         
-        <div className="absolute top-8 right-8 z-20 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setIsHistoryModalOpen(true);
-              fetchHistory();
-            }}
-            className="flex items-center justify-center w-11 h-11 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-lg"
-            aria-label="Lihat riwayat"
-            title="Riwayat"
-          >
-            <History className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={resetCurrentTimer}
-            className="flex items-center justify-center w-11 h-11 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-lg"
-            aria-label="Reset timer"
-            title="Reset (R)"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={handleExit}
-            className="text-zinc-800 hover:text-zinc-500 transition-colors text-sm font-medium flex items-center gap-2"
-          >
-            Exit (Esc)
-          </button>
-        </div>
+        {!isSplitScreen && (
+          <div className="absolute top-8 right-8 z-20 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setIsHistoryModalOpen(true);
+                fetchHistory();
+              }}
+              className="flex items-center justify-center w-11 h-11 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-lg"
+              aria-label="Lihat riwayat"
+              title="Riwayat"
+            >
+              <History className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={resetCurrentTimer}
+              className="flex items-center justify-center w-11 h-11 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-lg"
+              aria-label="Reset timer"
+              title="Reset (R)"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={handleExit}
+              className="text-zinc-800 hover:text-zinc-500 transition-colors text-sm font-medium flex items-center gap-2"
+            >
+              Exit (Esc)
+            </button>
+          </div>
+        )}
 
         {/* Indikator Status Simpan - Dipindah ke Kiri Bawah agar tidak menimpa judul */}
         {(status === 'saving' || status === 'saved') && phase !== 'FINISHED' && (
@@ -531,10 +549,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
           </div>
         )}
 
-        {/* Indikator Mode (Dipindah ke Kiri Atas) */}
-        <div className="absolute top-8 left-8 text-zinc-500 font-bold tracking-widest uppercase text-sm z-20">
-          Mode: <span className={direction === 'UP' ? 'text-indigo-400' : direction === 'DOWN' ? 'text-emerald-400' : 'text-amber-400'}>{direction === 'UP' ? 'Count-Up' : direction === 'DOWN' ? 'Count-Down' : 'Stopwatch'}</span>
-        </div>
+        {!isSplitScreen && (
+          <div className="absolute top-8 left-8 text-zinc-500 font-bold tracking-widest uppercase text-sm z-20">
+            Mode: <span className={direction === 'UP' ? 'text-indigo-400' : direction === 'DOWN' ? 'text-emerald-400' : 'text-amber-400'}>{direction === 'UP' ? 'Count-Up' : direction === 'DOWN' ? 'Count-Down' : 'Stopwatch'}</span>
+          </div>
+        )}
 
         {/* Kontainer Utama (Terpusat Sempurna) */}
         {isSplitScreen ? (
@@ -558,7 +577,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
                     setSession(nextSession);
                     syncSelectedTimerState(nextSession);
                   }}
-                  className={`w-full h-[70vh] rounded-3xl border px-6 py-6 transition-all duration-300 flex flex-col items-center justify-center ${panel.active ? 'border-[#1f7cff] bg-[#0d1d33] shadow-[0_0_30px_rgba(31,124,255,0.25)]' : 'border-zinc-800 bg-[#111] opacity-90'}`}
+                  className={`w-full h-[70vh] rounded-3xl border px-6 py-6 transition-all duration-300 flex flex-col items-center justify-center ${panel.active ? 'border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.2)]' : 'border-zinc-800'} bg-zinc-950 opacity-100`}
                 >
                   <div className="flex items-center justify-between w-full text-[10px] sm:text-xs tracking-[0.35em] uppercase text-zinc-400 mb-4">
                     <span>{panel.key === 'PREP' ? 'PREPARATION' : 'RACE'}</span>
@@ -575,7 +594,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
                 </button>
 
                 <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
-                  <h3 className="text-2xl md:text-4xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
+                  <h3 className="text-lg md:text-xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
                     {teamName}
                   </h3>
                 </div>
@@ -603,7 +622,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
             </div>
 
             <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
-              <h3 className="text-3xl md:text-5xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
+              <h3 className="text-lg md:text-xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
                 {teamName}
               </h3>
             </div>
