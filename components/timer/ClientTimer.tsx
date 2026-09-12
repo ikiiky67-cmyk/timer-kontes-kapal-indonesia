@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { History, X } from 'lucide-react';
+import { History, RotateCcw, X } from 'lucide-react';
 import AlertModal, { AlertType } from '@/components/ui/AlertModal';
 
 interface UnifiedHistory {
@@ -40,9 +40,13 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const [session, setSession] = useState<SessionType>('PREP');
   const [phase, setPhase] = useState<TimerPhase>('IDLE');
   const [direction, setDirection] = useState<TimerDirection>('DOWN');
+  const [isSplitScreen, setIsSplitScreen] = useState(false);
+  const [activeFocus, setActiveFocus] = useState<'PREPARATION' | 'RACE'>('PREPARATION');
   
   const [prepConfig, setPrepConfig] = useState<{target: number, mode: TimerDirection}>({ target: DEFAULT_PREP_TIME_MS, mode: 'DOWN' });
   const [raceConfig, setRaceConfig] = useState<{target: number, mode: TimerDirection}>({ target: DEFAULT_RACE_TIME_MS, mode: 'DOWN' });
+  const [prepRemaining, setPrepRemaining] = useState<number>(DEFAULT_PREP_TIME_MS);
+  const [raceRemaining, setRaceRemaining] = useState<number>(DEFAULT_RACE_TIME_MS);
 
   const remainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
   const startTimeRef = useRef<number>(0);
@@ -73,10 +77,64 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   });
 
   const router = useRouter();
+  const activeSession = activeFocus === 'PREPARATION' ? 'PREP' : 'RACE';
+  const activeConfig = activeSession === 'PREP' ? prepConfig : raceConfig;
+  const activeRemaining = activeSession === 'PREP' ? prepRemaining : raceRemaining;
+
+  const syncSelectedTimerState = useCallback((nextSession: SessionType) => {
+    const config = nextSession === 'PREP' ? prepConfig : raceConfig;
+    const nextRemaining = nextSession === 'PREP' ? prepRemaining : raceRemaining;
+
+    setDirection(config.mode);
+    setTargetTime(config.target);
+    remainingTimeRef.current = nextRemaining;
+    startRemainingTimeRef.current = nextRemaining;
+
+    if (timerDisplayRef.current) {
+      timerDisplayRef.current.textContent = formatTime(nextRemaining);
+    }
+  }, [prepConfig, prepRemaining, raceConfig, raceRemaining]);
 
   const closeAlert = useCallback(() => {
     setAlertState(prev => ({ ...prev, isOpen: false }));
   }, []);
+
+  const stopTimer = useCallback(() => {
+    setPhase('IDLE');
+    if (reqRef.current) {
+      cancelAnimationFrame(reqRef.current);
+      reqRef.current = null;
+    }
+  }, []);
+
+  const resetCurrentTimer = useCallback(() => {
+    const currentSession = activeSession;
+    const prepResetValue = prepConfig.mode === 'DOWN' ? prepConfig.target : 0;
+    const raceResetValue = raceConfig.mode === 'DOWN' ? raceConfig.target : 0;
+
+    if (isSplitScreen) {
+      setPrepRemaining(prepResetValue);
+      setRaceRemaining(raceResetValue);
+      remainingTimeRef.current = currentSession === 'PREP' ? prepResetValue : raceResetValue;
+    } else {
+      if (currentSession === 'PREP') {
+        setPrepRemaining(prepResetValue);
+        remainingTimeRef.current = prepResetValue;
+      } else {
+        setRaceRemaining(raceResetValue);
+        remainingTimeRef.current = raceResetValue;
+      }
+    }
+
+    if (timerDisplayRef.current) {
+      timerDisplayRef.current.textContent = formatTime(remainingTimeRef.current);
+    }
+
+    setPhase('IDLE');
+    setStatus('idle');
+    isSavingRef.current = false;
+    stopTimer();
+  }, [activeSession, isSplitScreen, prepConfig.mode, prepConfig.target, raceConfig.mode, raceConfig.target, stopTimer]);
 
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
@@ -130,14 +188,6 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     }
   }, [teamId]);
 
-  const stopTimer = useCallback(() => {
-    setPhase('IDLE');
-    if (reqRef.current) {
-      cancelAnimationFrame(reqRef.current);
-      reqRef.current = null;
-    }
-  }, []);
-
   const finishTimer = useCallback(async (finalTime: number) => {
     if (phase === 'FINISHED' || isSavingRef.current) return;
     
@@ -163,11 +213,15 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
 
       if (session === 'PREP') {
         setTimeout(() => {
-          setSession('RACE');
+          const nextSession: SessionType = 'RACE';
+          const nextFocus = 'RACE';
+          setSession(nextSession);
+          setActiveFocus(nextFocus);
           setDirection(raceConfig.mode);
           setTargetTime(raceConfig.target);
           const newRemaining = raceConfig.mode === 'DOWN' ? raceConfig.target : 0;
           remainingTimeRef.current = newRemaining;
+          setRaceRemaining(newRemaining);
           if (timerDisplayRef.current) {
             timerDisplayRef.current.textContent = formatTime(newRemaining);
           }
@@ -178,7 +232,6 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         }, 3000);
       } else {
         setPhase('FINISHED');
-        // Fitur peringatan Selesai dinonaktifkan sesuai permintaan (Clean TV UI)
       }
     } catch (err: any) {
       console.error(err);
@@ -201,6 +254,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       if (currentRemaining <= 0) {
         currentRemaining = 0;
         remainingTimeRef.current = currentRemaining;
+        if (session === 'PREP') {
+          setPrepRemaining(currentRemaining);
+        } else {
+          setRaceRemaining(currentRemaining);
+        }
         if (timerDisplayRef.current) {
           timerDisplayRef.current.textContent = formatTime(currentRemaining);
         }
@@ -212,6 +270,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       if (currentRemaining >= targetTime) {
         currentRemaining = targetTime;
         remainingTimeRef.current = currentRemaining;
+        if (session === 'PREP') {
+          setPrepRemaining(currentRemaining);
+        } else {
+          setRaceRemaining(currentRemaining);
+        }
         if (timerDisplayRef.current) {
           timerDisplayRef.current.textContent = formatTime(currentRemaining);
         }
@@ -219,17 +282,21 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         return;
       }
     } else {
-      // STOPWATCH
       currentRemaining = startRemainingTimeRef.current + elapsed;
     }
 
     remainingTimeRef.current = currentRemaining;
+    if (session === 'PREP') {
+      setPrepRemaining(currentRemaining);
+    } else {
+      setRaceRemaining(currentRemaining);
+    }
     if (timerDisplayRef.current) {
       timerDisplayRef.current.textContent = formatTime(currentRemaining);
     }
 
     reqRef.current = requestAnimationFrame(tick);
-  }, [phase, direction, targetTime, finishTimer]);
+  }, [phase, direction, targetTime, finishTimer, session]);
 
   useEffect(() => {
     if (phase === 'RUNNING') {
@@ -252,8 +319,15 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      
-      if (alertState.isOpen) return;
+      const target = e.target as HTMLElement | null;
+      const isTypingTarget = !!target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      );
+
+      if (alertState.isOpen || isTypingTarget) return;
 
       if (key === 'escape') {
         if (isHistoryModalOpen) {
@@ -289,10 +363,35 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         fetchHistory();
         return;
       }
+
+      if (key === 'v' || key === 'd') {
+        e.preventDefault();
+        setIsSplitScreen(prev => !prev);
+        return;
+      }
+
+      if (key === 'n') {
+        e.preventDefault();
+        if (phase === 'RUNNING') {
+          setPhase('IDLE');
+        }
+        const nextFocus = activeFocus === 'PREPARATION' ? 'RACE' : 'PREPARATION';
+        const nextSession: SessionType = nextFocus === 'PREPARATION' ? 'PREP' : 'RACE';
+        setActiveFocus(nextFocus);
+        setSession(nextSession);
+        syncSelectedTimerState(nextSession);
+        return;
+      }
+
+      if (key === 'r') {
+        e.preventDefault();
+        resetCurrentTimer();
+        return;
+      }
       
       if (key === 's') {
         if (phase === 'RUNNING') {
-          setPhase('IDLE'); // Auto pause
+          setPhase('IDLE');
         }
         setIsSettingTime(true);
       } else if (key === ' ' || e.code === 'Space') {
@@ -313,7 +412,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSettingTime, phase, finishTimer, status, handleExit, isHistoryModalOpen, fetchHistory, alertState.isOpen, direction, targetTime]);
+  }, [isSettingTime, phase, finishTimer, status, handleExit, isHistoryModalOpen, fetchHistory, alertState.isOpen, activeFocus, resetCurrentTimer, syncSelectedTimerState]);
 
   const [modalPrepMode, setModalPrepMode] = useState<TimerDirection>('DOWN');
   const [modalRaceMode, setModalRaceMode] = useState<TimerDirection>('DOWN');
@@ -380,13 +479,35 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       `}} />
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8 relative overflow-hidden select-none">
         
-        {/* Tombol Exit - Tetap tersembunyi/kecil di pojok */}
-        <button 
-          onClick={handleExit}
-          className="absolute top-8 right-8 text-zinc-800 hover:text-zinc-500 transition-colors text-sm font-medium flex items-center gap-2 z-20"
-        >
-          Exit (Esc)
-        </button>
+        <div className="absolute top-8 right-8 z-20 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setIsHistoryModalOpen(true);
+              fetchHistory();
+            }}
+            className="flex items-center justify-center w-11 h-11 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-lg"
+            aria-label="Lihat riwayat"
+            title="Riwayat"
+          >
+            <History className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={resetCurrentTimer}
+            className="flex items-center justify-center w-11 h-11 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all shadow-lg"
+            aria-label="Reset timer"
+            title="Reset (R)"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={handleExit}
+            className="text-zinc-800 hover:text-zinc-500 transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            Exit (Esc)
+          </button>
+        </div>
 
         {/* Indikator Status Simpan - Dipindah ke Kiri Bawah agar tidak menimpa judul */}
         {(status === 'saving' || status === 'saved') && phase !== 'FINISHED' && (
@@ -413,20 +534,54 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
             {/* 1. Stage Subtitle (Atas, Free-floating Text) */}
             <div className="animate-in fade-in slide-in-from-top-8 duration-700 w-full px-8">
               <h2 className="text-4xl sm:text-5xl md:text-5xl leading-none font-black tracking-widest uppercase text-white text-center">
-                {division} - {session === 'PREP' ? 'PREPARATION TIME' : 'RACE TIME'}
+                {division} - {activeSession === 'PREP' ? 'PREPARATION TIME' : 'RACE TIME'}
               </h2>
             </div>
             
             {/* 2. Tampilan Timer Utama (Tengah) - Desain Papan Skor Hardware Flat */}
-            <div className="w-full flex items-center justify-center relative">
-              <div className="bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw]">
-                
-                  <div className={`text-center transition-all duration-500 z-10 ${isSettingTime ? 'opacity-10 blur-sm scale-95' : 'opacity-100 scale-100'}`}>
-                    <h1 ref={timerDisplayRef} className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
-                      {formatTime(remainingTimeRef.current)}
-                    </h1>
+            <div className={`w-full ${isSplitScreen ? 'grid grid-cols-1 xl:grid-cols-2 gap-6' : 'flex items-center justify-center'}`}>
+              {isSplitScreen ? (
+                [
+                  { key: 'PREP', label: 'PREPARATION', config: prepConfig, remaining: prepRemaining, active: activeFocus === 'PREPARATION' },
+                  { key: 'RACE', label: 'RACE', config: raceConfig, remaining: raceRemaining, active: activeFocus === 'RACE' }
+                ].map((panel) => (
+                  <button
+                    key={panel.key}
+                    type="button"
+                    onClick={() => {
+                      const nextFocus = panel.key === 'PREP' ? 'PREPARATION' : 'RACE';
+                      const nextSession: SessionType = panel.key === 'PREP' ? 'PREP' : 'RACE';
+                      setActiveFocus(nextFocus);
+                      setSession(nextSession);
+                      syncSelectedTimerState(nextSession);
+                    }}
+                    className={`w-full rounded-3xl border px-6 py-6 transition-all duration-300 ${panel.active ? 'border-[#1f7cff] bg-[#0d1d33] shadow-[0_0_30px_rgba(31,124,255,0.25)] scale-[1.01]' : 'border-zinc-800 bg-[#111] opacity-90'} ${isSettingTime ? 'opacity-10 blur-sm' : 'opacity-100'}`}
+                  >
+                    <div className="flex items-center justify-between text-[10px] sm:text-xs tracking-[0.35em] uppercase text-zinc-400 mb-3">
+                      <span>{panel.label}</span>
+                      <span className={panel.active ? 'text-[#5ca2ff]' : 'text-zinc-500'}>{panel.active ? 'FOCUSED' : 'READY'}</span>
+                    </div>
+                    <div className="text-center">
+                      <h1 className="text-[11vw] xl:text-[7vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
+                        {formatTime(panel.remaining)}
+                      </h1>
+                    </div>
+                    <div className="mt-3 flex justify-center gap-2 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+                      <span>{panel.config.mode}</span>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="w-full flex items-center justify-center relative">
+                  <div className={`bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw] border transition-all duration-300 ${activeFocus === 'PREPARATION' ? 'border-[#1f7cff] shadow-[0_0_30px_rgba(31,124,255,0.25)]' : 'border-zinc-800'}`}>
+                    <div className={`text-center transition-all duration-500 z-10 ${isSettingTime ? 'opacity-10 blur-sm scale-95' : 'opacity-100 scale-100'}`}>
+                      <h1 ref={timerDisplayRef} className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
+                        {formatTime(activeRemaining)}
+                      </h1>
+                    </div>
                   </div>
-              </div>
+                </div>
+              )}
             </div>
             
           </div>
