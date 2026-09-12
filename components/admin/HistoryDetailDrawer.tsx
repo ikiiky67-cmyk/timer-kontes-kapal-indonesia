@@ -177,7 +177,7 @@ export default function HistoryDetailDrawer({ isOpen, onClose, team }: HistoryDe
     doc.line(14, 44, pageWidth - 14, 44);
 
     // Table
-    const tableColumn = ["NO.", "DATE & TIME", "PHASE", "MODE", "TARGET TIME", "ACTUAL TIME USED"];
+    const tableColumn = ["NO.", "DATE & TIME", "PHASE", "MODE", "TARGET TIME", "REMAINING TIME", "ACTUAL TIME USED"];
     const tableRows = logs.map((log, index) => {
       const isStopwatch = log.mode === 'STOPWATCH';
       
@@ -189,6 +189,7 @@ export default function HistoryDetailDrawer({ isOpen, onClose, team }: HistoryDe
       }
       
       const targetTimeStr = isStopwatch ? '-' : formatTime(log.targetTime);
+      const remainingTimeStr = isStopwatch ? '-' : formatTime(log.remainingTime);
       const actualTimeStr = formatTime(actualTimeMs);
       const phase = log.type === 'PREP' ? 'Preparation' : 'Race';
 
@@ -198,6 +199,7 @@ export default function HistoryDetailDrawer({ isOpen, onClose, team }: HistoryDe
         phase,
         log.mode,
         targetTimeStr,
+        remainingTimeStr,
         actualTimeStr
       ];
     });
@@ -230,12 +232,13 @@ export default function HistoryDetailDrawer({ isOpen, onClose, team }: HistoryDe
         fillColor: [248, 250, 252], // Zebra striping
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 10 }, 
-        1: { halign: 'left', cellWidth: 40 },
-        2: { halign: 'center', cellWidth: 26 }, 
-        3: { halign: 'center', cellWidth: 28 }, 
-        4: { halign: 'center', cellWidth: 32 }, 
-        5: { halign: 'center', cellWidth: 34 }, 
+        0: { halign: 'center', cellWidth: 8 },
+        1: { halign: 'left', cellWidth: 34 },
+        2: { halign: 'center', cellWidth: 22 },
+        3: { halign: 'center', cellWidth: 22 },
+        4: { halign: 'center', cellWidth: 27 },
+        5: { halign: 'center', cellWidth: 28 },
+        6: { halign: 'center', cellWidth: 29 },
       },
     });
 

@@ -8,7 +8,8 @@ import AlertModal, { AlertType } from '@/components/ui/AlertModal';
 interface UnifiedHistory {
   id: string;
   type: 'PREP' | 'RACE';
-  remainingTime: number;
+  remainingTime: string;
+  remainingTimeMs: number;
   targetTime: number;
   mode: 'DOWN' | 'UP' | 'STOPWATCH';
   createdAt: string;
@@ -156,7 +157,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       const res = await fetch(`/api/teams/${teamId}/history`);
       if (res.ok) {
         const data = await res.json();
-        setHistoryData(data);
+        setHistoryData(data.map((history: Omit<UnifiedHistory, 'remainingTime' | 'remainingTimeMs'> & { remainingTime: number }) => ({
+          ...history,
+          remainingTime: history.mode === 'STOPWATCH' ? '-' : formatTime(history.remainingTime),
+          remainingTimeMs: history.remainingTime,
+        })));
       } else {
         setAlertState({ isOpen: true, title: 'Gagal Memuat', message: 'Tidak dapat mengambil riwayat tim.', type: 'error' });
       }
@@ -769,7 +774,10 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
                 ) : (
                   <div className="space-y-3">
                     {historyData.map((h) => {
-                      const elapsed = (h.mode === 'UP' || h.mode === 'STOPWATCH') ? h.remainingTime : Math.max(0, h.targetTime - h.remainingTime);
+                      const remainingTime = h.mode === 'STOPWATCH' ? '-' : h.remainingTime;
+                      const elapsed = formatTime(h.mode === 'STOPWATCH'
+                        ? h.remainingTimeMs
+                        : Math.max(0, h.targetTime - h.remainingTimeMs));
 
                       return (
                         <div key={h.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700 gap-4">
@@ -782,10 +790,14 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
                             </div>
                             <div className="text-xs text-gray-500">{new Date(h.createdAt).toLocaleString('id-ID')}</div>
                           </div>
-                          <div className="flex items-center gap-6 sm:gap-12">
+                          <div className="flex items-center gap-5 sm:gap-8">
                             <div className="text-left sm:text-right">
                               <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Waktu Target</div>
                               <div className="text-base font-mono text-gray-300">{h.mode === 'STOPWATCH' ? '-' : formatTime(h.targetTime)}</div>
+                            </div>
+                            <div className="text-left sm:text-right">
+                              <div className="text-[10px] text-orange-400 uppercase tracking-wider mb-1 font-bold">Waktu Tersisa</div>
+                              <div className="text-base font-mono text-orange-300">{remainingTime}</div>
                             </div>
                             <div className="text-right">
                               <div className="text-[10px] text-emerald-500 uppercase tracking-wider mb-1 font-bold">Waktu Terpakai</div>
