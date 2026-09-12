@@ -775,9 +775,9 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
                   <div className="space-y-3">
                     {historyData.map((h) => {
                       const remainingTime = h.mode === 'STOPWATCH' ? '-' : h.remainingTime;
-                      const elapsed = formatTime(h.mode === 'STOPWATCH'
+                      const elapsed = h.mode === 'STOPWATCH'
                         ? h.remainingTimeMs
-                        : Math.max(0, h.targetTime - h.remainingTimeMs));
+                        : Math.max(0, h.targetTime - h.remainingTimeMs);
 
                       return (
                         <div key={h.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-700 gap-4">

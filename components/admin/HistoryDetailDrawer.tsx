@@ -216,13 +216,13 @@ export default function HistoryDetailDrawer({ isOpen, onClose, team }: HistoryDe
         fontStyle: 'bold',
         halign: 'center',
         valign: 'middle',
-        fontSize: 9,
+        fontSize: 8,
         lineWidth: 0.1,
         lineColor: [15, 23, 42], // Match head bg or use light gray
       },
       styles: {
         fontSize: 9,
-        cellPadding: 4, // Padding diturunkan agar lebih seimbang
+        cellPadding: 2,
         textColor: [51, 65, 85],
         valign: 'middle',
         lineWidth: 0.1,
