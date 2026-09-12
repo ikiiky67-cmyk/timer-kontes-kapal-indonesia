@@ -19,6 +19,9 @@ KKI Timer System is a live competition stopwatch for maritime robotics events. I
 | `V` or `D` | Open Dual Split-Screen mode |
 | `R` | Reset the focused timer to its initial time |
 | `S` | Set the competition target time |
+| `F` | Stop the focused timer and save the session |
+| `M` | Toggle fullscreen mode; `F11` is also supported |
+| `H` | Open the team history when the timer is idle or finished |
 
 ## Tech Stack
 
@@ -70,7 +73,8 @@ Open [http://localhost:3000](http://localhost:3000) in a browser.
 2. An operator signs in and selects the team that is ready to compete.
 3. The operator sets target times with `S` and starts the focused phase with `Spacebar`.
 4. The operator uses `N` to move between Preparation and Race, or `V`/`D` to monitor both phases together.
-5. Session results are stored in team history and can be exported as branded PDF reports by an admin.
+5. Press `F` to stop and save a session, or wait for the target to complete automatically. Use `H` to review team history and `M` for fullscreen display.
+6. Session results are stored in team history and can be exported as branded PDF reports by an admin.
 
 ## Project Scope
 

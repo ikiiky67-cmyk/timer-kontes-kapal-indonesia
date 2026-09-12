@@ -70,6 +70,30 @@ const shortcuts = [
     textColor: 'text-amber-200',
     keyColor: 'bg-amber-600 text-white shadow-[0_0_12px_rgba(217,119,6,0.4)]',
   },
+  {
+    key: 'F',
+    action: 'Selesaikan dan Simpan',
+    detail: 'Menghentikan timer yang sedang berjalan dan langsung menyimpan waktu sesi ke riwayat tim.',
+    color: 'bg-red-950/50 border-red-800/60',
+    textColor: 'text-red-200',
+    keyColor: 'bg-red-700 text-white shadow-[0_0_12px_rgba(185,28,28,0.4)]',
+  },
+  {
+    key: 'M',
+    action: 'Buka Layar Penuh',
+    detail: 'Mengaktifkan atau menonaktifkan layar penuh untuk tampilan timer yang lebih besar di TV atau proyektor. F11 juga dapat digunakan.',
+    color: 'bg-cyan-950/50 border-cyan-800/60',
+    textColor: 'text-cyan-200',
+    keyColor: 'bg-cyan-700 text-white shadow-[0_0_12px_rgba(14,116,144,0.4)]',
+  },
+  {
+    key: 'H',
+    action: 'Lihat Riwayat Tim',
+    detail: 'Membuka riwayat waktu tim saat timer sedang berhenti atau sudah selesai.',
+    color: 'bg-fuchsia-950/50 border-fuchsia-800/60',
+    textColor: 'text-fuchsia-200',
+    keyColor: 'bg-fuchsia-700 text-white shadow-[0_0_12px_rgba(162,28,175,0.4)]',
+  },
 ];
 
 const modes = [
@@ -149,7 +173,7 @@ const quicksteps = [
   {
     num: '06',
     title: 'Pindah Fase dan Simpan Hasil',
-    desc: 'Gunakan N untuk memindahkan fokus antara Preparation dan Race. Setelah sesi selesai, hasil waktu tersimpan dalam riwayat tim untuk pemeriksaan resmi.',
+    desc: 'Gunakan N untuk memindahkan fokus antara Preparation dan Race. Tekan F untuk menghentikan dan menyimpan sesi, H untuk melihat riwayat, atau M untuk layar penuh.',
     icon: <Square className="w-5 h-5" />,
     accent: 'from-red-500 to-red-700',
     action: null,

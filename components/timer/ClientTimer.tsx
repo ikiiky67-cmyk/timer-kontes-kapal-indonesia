@@ -51,6 +51,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const remainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
   const startTimeRef = useRef<number>(0);
   const startRemainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
+  const targetTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
   const timerDisplayRef = useRef<HTMLHeadingElement>(null);
   const prepTimerTextRef = useRef<HTMLHeadingElement>(null);
   const raceTimerTextRef = useRef<HTMLHeadingElement>(null);
@@ -89,6 +90,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
 
     setDirection(config.mode);
     setTargetTime(config.target);
+    targetTimeRef.current = config.target;
     remainingTimeRef.current = nextRemaining;
     startRemainingTimeRef.current = nextRemaining;
 
@@ -196,9 +198,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     }
   }, [teamId]);
 
-  const finishTimer = useCallback(async (finalTime: number) => {
+  const finishTimer = useCallback(async () => {
     if (phase === 'FINISHED' || isSavingRef.current) return;
 
+    const finalRemainingTime = Math.floor(Math.max(0, remainingTimeRef.current));
+    remainingTimeRef.current = finalRemainingTime;
     isSavingRef.current = true;
     stopTimer();
     setStatus('saving');
@@ -209,8 +213,8 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamId,
-          remainingTime: finalTime,
-          targetTime: targetTime,
+          remainingTime: finalRemainingTime,
+          targetTime: targetTimeRef.current,
           type: session,
           mode: direction,
         }),
@@ -227,6 +231,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
           setActiveFocus(nextFocus);
           setDirection(raceConfig.mode);
           setTargetTime(raceConfig.target);
+          targetTimeRef.current = raceConfig.target;
           const newRemaining = raceConfig.mode === 'DOWN' ? raceConfig.target : 0;
           remainingTimeRef.current = newRemaining;
           setRaceRemaining(newRemaining);
@@ -247,7 +252,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       setAlertState({ isOpen: true, title: 'Gagal Menyimpan', message: err.message || 'Terjadi kesalahan saat menyimpan histori.', type: 'error' });
       isSavingRef.current = false;
     }
-  }, [phase, stopTimer, teamId, targetTime, session, direction, lockAsRacing, raceConfig]);
+  }, [phase, stopTimer, teamId, session, direction, lockAsRacing, raceConfig]);
 
   const tick = useCallback(() => {
     if (phase !== 'RUNNING') return;
@@ -267,7 +272,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         }
         if (prepTimerTextRef.current && session === 'PREP') prepTimerTextRef.current.textContent = formatTime(currentRemaining);
         if (raceTimerTextRef.current && session === 'RACE') raceTimerTextRef.current.textContent = formatTime(currentRemaining);
-        finishTimer(0);
+        finishTimer();
         return;
       }
     } else if (direction === 'UP') {
@@ -280,7 +285,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         }
         if (prepTimerTextRef.current && session === 'PREP') prepTimerTextRef.current.textContent = formatTime(currentRemaining);
         if (raceTimerTextRef.current && session === 'RACE') raceTimerTextRef.current.textContent = formatTime(currentRemaining);
-        finishTimer(targetTime);
+        finishTimer();
         return;
       }
     } else {
@@ -400,6 +405,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         const selectedConfig = selectedSession === 'PREP' ? prepConfig : raceConfig;
         setDirection(selectedConfig.mode);
         setTargetTime(selectedConfig.target);
+        targetTimeRef.current = selectedConfig.target;
         remainingTimeRef.current = selectedSession === 'PREP' ? prepRemaining : raceRemaining;
         startRemainingTimeRef.current = remainingTimeRef.current;
         if (phase !== 'FINISHED') {
@@ -411,7 +417,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         }
       } else if (key === 'f') {
         if (phase !== 'FINISHED') {
-          finishTimer(remainingTimeRef.current);
+          finishTimer();
         }
       }
     };
@@ -457,6 +463,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       const currentConfig = activeSessionToApply === 'PREP' ? { target: newPrepTarget, mode: prepMode } : { target: newRaceTarget, mode: raceMode };
       setDirection(currentConfig.mode);
       setTargetTime(currentConfig.target);
+      targetTimeRef.current = currentConfig.target;
       const newRemaining = currentConfig.mode === 'DOWN' ? currentConfig.target : 0;
       remainingTimeRef.current = newRemaining;
       startRemainingTimeRef.current = newRemaining;
@@ -466,6 +473,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     } else if (session === 'PREP') {
       setDirection(prepMode);
       setTargetTime(newPrepTarget);
+      targetTimeRef.current = newPrepTarget;
       remainingTimeRef.current = nextPrepRemaining;
       startRemainingTimeRef.current = nextPrepRemaining;
       if (timerDisplayRef.current) {
@@ -474,6 +482,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     } else {
       setDirection(raceMode);
       setTargetTime(newRaceTarget);
+      targetTimeRef.current = newRaceTarget;
       remainingTimeRef.current = nextRaceRemaining;
       startRemainingTimeRef.current = nextRaceRemaining;
       if (timerDisplayRef.current) {
