@@ -52,6 +52,8 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const startTimeRef = useRef<number>(0);
   const startRemainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
   const timerDisplayRef = useRef<HTMLHeadingElement>(null);
+  const prepTimerTextRef = useRef<HTMLHeadingElement>(null);
+  const raceTimerTextRef = useRef<HTMLHeadingElement>(null);
   
   const [targetTime, setTargetTime] = useState<number>(DEFAULT_PREP_TIME_MS);
   
@@ -258,14 +260,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       if (currentRemaining <= 0) {
         currentRemaining = 0;
         remainingTimeRef.current = currentRemaining;
-        if (session === 'PREP') {
-          setPrepRemaining(currentRemaining);
-        } else {
-          setRaceRemaining(currentRemaining);
-        }
         if (timerDisplayRef.current) {
           timerDisplayRef.current.textContent = formatTime(currentRemaining);
         }
+        if (prepTimerTextRef.current && session === 'PREP') prepTimerTextRef.current.textContent = formatTime(currentRemaining);
+        if (raceTimerTextRef.current && session === 'RACE') raceTimerTextRef.current.textContent = formatTime(currentRemaining);
         finishTimer(0);
         return;
       }
@@ -274,14 +273,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       if (currentRemaining >= targetTime) {
         currentRemaining = targetTime;
         remainingTimeRef.current = currentRemaining;
-        if (session === 'PREP') {
-          setPrepRemaining(currentRemaining);
-        } else {
-          setRaceRemaining(currentRemaining);
-        }
         if (timerDisplayRef.current) {
           timerDisplayRef.current.textContent = formatTime(currentRemaining);
         }
+        if (prepTimerTextRef.current && session === 'PREP') prepTimerTextRef.current.textContent = formatTime(currentRemaining);
+        if (raceTimerTextRef.current && session === 'RACE') raceTimerTextRef.current.textContent = formatTime(currentRemaining);
         finishTimer(targetTime);
         return;
       }
@@ -290,14 +286,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     }
 
     remainingTimeRef.current = currentRemaining;
-    if (session === 'PREP') {
-      setPrepRemaining(currentRemaining);
-    } else {
-      setRaceRemaining(currentRemaining);
-    }
     if (timerDisplayRef.current) {
       timerDisplayRef.current.textContent = formatTime(currentRemaining);
     }
+    if (prepTimerTextRef.current && session === 'PREP') prepTimerTextRef.current.textContent = formatTime(currentRemaining);
+    if (raceTimerTextRef.current && session === 'RACE') raceTimerTextRef.current.textContent = formatTime(currentRemaining);
 
     reqRef.current = requestAnimationFrame(tick);
   }, [phase, direction, targetTime, finishTimer, session]);
@@ -563,13 +556,10 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
               { key: 'RACE', label: 'RACE TIME', config: raceConfig, remaining: raceRemaining, active: activeFocus === 'RACE', focusValue: 'RACE' as const }
             ].map((panel, index) => (
               <div key={panel.key} className={`flex flex-col items-center justify-center ${index === 0 ? 'border-r border-zinc-700 pr-8' : 'pl-8'}`}>
-                <div className="w-full flex items-center justify-center gap-4 mb-2">
+                <div className="w-full flex items-center justify-center mb-2">
                   <h2 className="text-3xl sm:text-4xl md:text-5xl leading-none font-black tracking-widest uppercase text-white text-center">
                     {panel.label}
                   </h2>
-                  <span className={`text-[10px] sm:text-xs font-bold tracking-[0.35em] uppercase ${panel.active ? 'text-[#5ca2ff]' : 'text-zinc-500'}`}>
-                    {panel.active ? 'FOCUSED' : 'READY'}
-                  </span>
                 </div>
 
                 <button
@@ -583,11 +573,20 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
                   className="w-full flex flex-col items-center justify-center bg-transparent border-0 p-0 outline-none"
                 >
                   <div className="flex items-center justify-center w-full">
-                    <h1 className="text-[12vw] lg:text-[8vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
+                    <h1
+                      ref={panel.key === 'PREP' ? prepTimerTextRef : raceTimerTextRef}
+                      className="text-[12vw] lg:text-[8vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none"
+                    >
                       {formatTime(panel.remaining)}
                     </h1>
                   </div>
                 </button>
+
+                <div className="mt-16 sm:mt-20 text-center">
+                  <span className={`block text-[10px] sm:text-xs font-semibold tracking-[0.2em] uppercase ${panel.active ? 'text-[#5ca2ff]' : 'text-zinc-500'}`}>
+                    {panel.active ? 'FOCUSED' : 'READY'}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
