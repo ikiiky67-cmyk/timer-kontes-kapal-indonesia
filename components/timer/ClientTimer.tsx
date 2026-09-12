@@ -26,16 +26,6 @@ const formatTime = (ms: number) => {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
 };
 
-const parseTime = (value: string | null | undefined) => {
-  if (!value) return null;
-
-  const match = value.trim().match(/^(\d+):(\d{2})\.(\d{2})$/);
-  if (!match) return null;
-
-  const [, minutes, seconds, centiseconds] = match;
-  return (Number(minutes) * 60 + Number(seconds)) * 1000 + Number(centiseconds) * 10;
-};
-
 interface ClientTimerProps {
   teamId: string;
   teamName: string;
@@ -59,6 +49,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const [raceRemaining, setRaceRemaining] = useState<number>(DEFAULT_RACE_TIME_MS);
 
   const remainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
+  const elapsedMsRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
   const startRemainingTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
   const targetTimeRef = useRef<number>(DEFAULT_PREP_TIME_MS);
@@ -102,6 +93,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     setTargetTime(config.target);
     targetTimeRef.current = config.target;
     remainingTimeRef.current = nextRemaining;
+    elapsedMsRef.current = 0;
     startRemainingTimeRef.current = nextRemaining;
 
     if (timerDisplayRef.current) {
@@ -133,6 +125,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     if (currentSession === 'PREP') {
       setPrepRemaining(prepResetValue);
       remainingTimeRef.current = prepResetValue;
+      elapsedMsRef.current = 0;
       startRemainingTimeRef.current = prepResetValue;
       if (prepTimerTextRef.current) {
         prepTimerTextRef.current.textContent = formatTime(prepResetValue);
@@ -140,6 +133,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     } else {
       setRaceRemaining(raceResetValue);
       remainingTimeRef.current = raceResetValue;
+      elapsedMsRef.current = 0;
       startRemainingTimeRef.current = raceResetValue;
       if (raceTimerTextRef.current) {
         raceTimerTextRef.current.textContent = formatTime(raceResetValue);
@@ -211,11 +205,10 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const finishTimer = useCallback(async () => {
     if (phase === 'FINISHED' || isSavingRef.current) return;
 
-    const activeTimerText = session === 'PREP'
-      ? prepTimerTextRef.current?.textContent
-      : raceTimerTextRef.current?.textContent;
-    const displayedRemainingTime = parseTime(activeTimerText);
-    const finalRemainingTime = displayedRemainingTime ?? Math.floor(Math.max(0, remainingTimeRef.current));
+    const finalElapsedTime = Math.max(0, elapsedMsRef.current);
+    const finalRemainingTime = direction === 'DOWN'
+      ? Math.max(0, targetTimeRef.current - finalElapsedTime)
+      : finalElapsedTime;
     remainingTimeRef.current = finalRemainingTime;
     isSavingRef.current = true;
     stopTimer();
@@ -248,6 +241,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
           targetTimeRef.current = raceConfig.target;
           const newRemaining = raceConfig.mode === 'DOWN' ? raceConfig.target : 0;
           remainingTimeRef.current = newRemaining;
+          elapsedMsRef.current = 0;
           setRaceRemaining(newRemaining);
           if (timerDisplayRef.current) {
             timerDisplayRef.current.textContent = formatTime(newRemaining);
@@ -278,8 +272,10 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
 
     if (direction === 'DOWN') {
       currentRemaining = startRemainingTimeRef.current - elapsed;
+      elapsedMsRef.current = targetTimeRef.current - Math.max(0, currentRemaining);
       if (currentRemaining <= 0) {
         currentRemaining = 0;
+        elapsedMsRef.current = targetTimeRef.current;
         remainingTimeRef.current = currentRemaining;
         if (timerDisplayRef.current) {
           timerDisplayRef.current.textContent = formatTime(currentRemaining);
@@ -291,8 +287,10 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       }
     } else if (direction === 'UP') {
       currentRemaining = startRemainingTimeRef.current + elapsed;
+      elapsedMsRef.current = currentRemaining;
       if (currentRemaining >= targetTime) {
         currentRemaining = targetTime;
+        elapsedMsRef.current = currentRemaining;
         remainingTimeRef.current = currentRemaining;
         if (timerDisplayRef.current) {
           timerDisplayRef.current.textContent = formatTime(currentRemaining);
@@ -304,6 +302,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       }
     } else {
       currentRemaining = startRemainingTimeRef.current + elapsed;
+      elapsedMsRef.current = currentRemaining;
     }
 
     remainingTimeRef.current = currentRemaining;
@@ -421,6 +420,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         setTargetTime(selectedConfig.target);
         targetTimeRef.current = selectedConfig.target;
         remainingTimeRef.current = selectedSession === 'PREP' ? prepRemaining : raceRemaining;
+        elapsedMsRef.current = 0;
         startRemainingTimeRef.current = remainingTimeRef.current;
         if (phase !== 'FINISHED') {
           if (phase === 'RUNNING') {
@@ -480,6 +480,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       targetTimeRef.current = currentConfig.target;
       const newRemaining = currentConfig.mode === 'DOWN' ? currentConfig.target : 0;
       remainingTimeRef.current = newRemaining;
+      elapsedMsRef.current = 0;
       startRemainingTimeRef.current = newRemaining;
       if (timerDisplayRef.current) {
         timerDisplayRef.current.textContent = formatTime(newRemaining);
@@ -489,6 +490,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       setTargetTime(newPrepTarget);
       targetTimeRef.current = newPrepTarget;
       remainingTimeRef.current = nextPrepRemaining;
+      elapsedMsRef.current = 0;
       startRemainingTimeRef.current = nextPrepRemaining;
       if (timerDisplayRef.current) {
         timerDisplayRef.current.textContent = formatTime(nextPrepRemaining);
@@ -498,6 +500,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
       setTargetTime(newRaceTarget);
       targetTimeRef.current = newRaceTarget;
       remainingTimeRef.current = nextRaceRemaining;
+      elapsedMsRef.current = 0;
       startRemainingTimeRef.current = nextRaceRemaining;
       if (timerDisplayRef.current) {
         timerDisplayRef.current.textContent = formatTime(nextRaceRemaining);
