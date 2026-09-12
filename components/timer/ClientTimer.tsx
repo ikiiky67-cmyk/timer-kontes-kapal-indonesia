@@ -557,16 +557,19 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
 
         {/* Kontainer Utama (Terpusat Sempurna) */}
         {isSplitScreen ? (
-          <div className="grid grid-cols-2 w-full h-screen z-10 gap-6 px-6 py-8">
+          <div className="grid grid-cols-2 w-full h-screen z-10 px-8 py-8">
             {[
               { key: 'PREP', label: 'PREPARATION TIME', config: prepConfig, remaining: prepRemaining, active: activeFocus === 'PREPARATION', focusValue: 'PREPARATION' as const },
               { key: 'RACE', label: 'RACE TIME', config: raceConfig, remaining: raceRemaining, active: activeFocus === 'RACE', focusValue: 'RACE' as const }
-            ].map((panel) => (
-              <div key={panel.key} className="flex flex-col items-center justify-center gap-6">
-                <div className="w-full text-center">
-                  <h2 className="text-3xl sm:text-4xl md:text-5xl leading-none font-black tracking-widest uppercase text-white">
+            ].map((panel, index) => (
+              <div key={panel.key} className={`flex flex-col items-center justify-center ${index === 0 ? 'border-r border-zinc-700 pr-8' : 'pl-8'}`}>
+                <div className="w-full flex items-center justify-center gap-4 mb-2">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl leading-none font-black tracking-widest uppercase text-white text-center">
                     {panel.label}
                   </h2>
+                  <span className={`text-[10px] sm:text-xs font-bold tracking-[0.35em] uppercase ${panel.active ? 'text-[#5ca2ff]' : 'text-zinc-500'}`}>
+                    {panel.active ? 'FOCUSED' : 'READY'}
+                  </span>
                 </div>
 
                 <button
@@ -577,27 +580,14 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
                     setSession(nextSession);
                     syncSelectedTimerState(nextSession);
                   }}
-                  className={`w-full h-[70vh] rounded-3xl border px-6 py-6 transition-all duration-300 flex flex-col items-center justify-center ${panel.active ? 'border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.2)]' : 'border-zinc-800'} bg-zinc-950 opacity-100`}
+                  className="w-full flex flex-col items-center justify-center bg-transparent border-0 p-0 outline-none"
                 >
-                  <div className="flex items-center justify-between w-full text-[10px] sm:text-xs tracking-[0.35em] uppercase text-zinc-400 mb-4">
-                    <span>{panel.key === 'PREP' ? 'PREPARATION' : 'RACE'}</span>
-                    <span className={panel.active ? 'text-[#5ca2ff]' : 'text-zinc-500'}>{panel.active ? 'FOCUSED' : 'READY'}</span>
-                  </div>
-                  <div className="flex items-center justify-center flex-1 w-full">
+                  <div className="flex items-center justify-center w-full">
                     <h1 className="text-[12vw] lg:text-[8vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
                       {formatTime(panel.remaining)}
                     </h1>
                   </div>
-                  <div className="mt-4 flex justify-center gap-2 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                    <span>{panel.config.mode}</span>
-                  </div>
                 </button>
-
-                <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
-                  <h3 className="text-lg md:text-xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
-                    {teamName}
-                  </h3>
-                </div>
               </div>
             ))}
           </div>
@@ -621,11 +611,13 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
-              <h3 className="text-lg md:text-xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
-                {teamName}
-              </h3>
-            </div>
+            {!isSplitScreen && (
+              <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
+                <h3 className="text-3xl md:text-5xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
+                  {teamName}
+                </h3>
+              </div>
+            )}
           </div>
         )}
 
