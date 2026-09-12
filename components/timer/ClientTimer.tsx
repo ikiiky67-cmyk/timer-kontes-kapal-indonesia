@@ -95,6 +95,10 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
     }
   }, [prepConfig, prepRemaining, raceConfig, raceRemaining]);
 
+  const focusSession = activeFocus === 'PREPARATION' ? 'PREP' : 'RACE';
+  const focusConfig = focusSession === 'PREP' ? prepConfig : raceConfig;
+  const focusRemaining = focusSession === 'PREP' ? prepRemaining : raceRemaining;
+
   const closeAlert = useCallback(() => {
     setAlertState(prev => ({ ...prev, isOpen: false }));
   }, []);
@@ -395,7 +399,14 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         }
         setIsSettingTime(true);
       } else if (key === ' ' || e.code === 'Space') {
-        e.preventDefault(); 
+        e.preventDefault();
+        const selectedSession = activeFocus === 'PREPARATION' ? 'PREP' : 'RACE';
+        setSession(selectedSession);
+        const selectedConfig = selectedSession === 'PREP' ? prepConfig : raceConfig;
+        setDirection(selectedConfig.mode);
+        setTargetTime(selectedConfig.target);
+        remainingTimeRef.current = selectedSession === 'PREP' ? prepRemaining : raceRemaining;
+        startRemainingTimeRef.current = remainingTimeRef.current;
         if (phase !== 'FINISHED') {
           if (phase === 'RUNNING') {
             setPhase('IDLE');
@@ -412,7 +423,7 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSettingTime, phase, finishTimer, status, handleExit, isHistoryModalOpen, fetchHistory, alertState.isOpen, activeFocus, resetCurrentTimer, syncSelectedTimerState]);
+  }, [isSettingTime, phase, finishTimer, status, handleExit, isHistoryModalOpen, fetchHistory, alertState.isOpen, activeFocus, prepConfig, prepRemaining, raceConfig, raceRemaining, resetCurrentTimer, syncSelectedTimerState]);
 
   const [modalPrepMode, setModalPrepMode] = useState<TimerDirection>('DOWN');
   const [modalRaceMode, setModalRaceMode] = useState<TimerDirection>('DOWN');
@@ -526,74 +537,78 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
         </div>
 
         {/* Kontainer Utama (Terpusat Sempurna) */}
-        <div className="flex flex-col items-center justify-center gap-12 w-full z-10">
-          
-          {/* Grup Atas: Judul dan Timer (Sangat rapat) */}
-          <div className="flex flex-col items-center justify-center w-full gap-2">
-            
-            {/* 1. Stage Subtitle (Atas, Free-floating Text) */}
-            <div className="animate-in fade-in slide-in-from-top-8 duration-700 w-full px-8">
-              <h2 className="text-4xl sm:text-5xl md:text-5xl leading-none font-black tracking-widest uppercase text-white text-center">
-                {division} - {activeSession === 'PREP' ? 'PREPARATION TIME' : 'RACE TIME'}
-              </h2>
-            </div>
-            
-            {/* 2. Tampilan Timer Utama (Tengah) - Desain Papan Skor Hardware Flat */}
-            <div className={`w-full ${isSplitScreen ? 'grid grid-cols-1 xl:grid-cols-2 gap-6' : 'flex items-center justify-center'}`}>
-              {isSplitScreen ? (
-                [
-                  { key: 'PREP', label: 'PREPARATION', config: prepConfig, remaining: prepRemaining, active: activeFocus === 'PREPARATION' },
-                  { key: 'RACE', label: 'RACE', config: raceConfig, remaining: raceRemaining, active: activeFocus === 'RACE' }
-                ].map((panel) => (
-                  <button
-                    key={panel.key}
-                    type="button"
-                    onClick={() => {
-                      const nextFocus = panel.key === 'PREP' ? 'PREPARATION' : 'RACE';
-                      const nextSession: SessionType = panel.key === 'PREP' ? 'PREP' : 'RACE';
-                      setActiveFocus(nextFocus);
-                      setSession(nextSession);
-                      syncSelectedTimerState(nextSession);
-                    }}
-                    className={`w-full rounded-3xl border px-6 py-6 transition-all duration-300 ${panel.active ? 'border-[#1f7cff] bg-[#0d1d33] shadow-[0_0_30px_rgba(31,124,255,0.25)] scale-[1.01]' : 'border-zinc-800 bg-[#111] opacity-90'} ${isSettingTime ? 'opacity-10 blur-sm' : 'opacity-100'}`}
-                  >
-                    <div className="flex items-center justify-between text-[10px] sm:text-xs tracking-[0.35em] uppercase text-zinc-400 mb-3">
-                      <span>{panel.label}</span>
-                      <span className={panel.active ? 'text-[#5ca2ff]' : 'text-zinc-500'}>{panel.active ? 'FOCUSED' : 'READY'}</span>
-                    </div>
-                    <div className="text-center">
-                      <h1 className="text-[11vw] xl:text-[7vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
-                        {formatTime(panel.remaining)}
-                      </h1>
-                    </div>
-                    <div className="mt-3 flex justify-center gap-2 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                      <span>{panel.config.mode}</span>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="w-full flex items-center justify-center relative">
-                  <div className={`bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw] border transition-all duration-300 ${activeFocus === 'PREPARATION' ? 'border-[#1f7cff] shadow-[0_0_30px_rgba(31,124,255,0.25)]' : 'border-zinc-800'}`}>
-                    <div className={`text-center transition-all duration-500 z-10 ${isSettingTime ? 'opacity-10 blur-sm scale-95' : 'opacity-100 scale-100'}`}>
-                      <h1 ref={timerDisplayRef} className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
-                        {formatTime(activeRemaining)}
-                      </h1>
-                    </div>
+        {isSplitScreen ? (
+          <div className="grid grid-cols-2 w-full h-screen z-10 gap-6 px-6 py-8">
+            {[
+              { key: 'PREP', label: 'PREPARATION TIME', config: prepConfig, remaining: prepRemaining, active: activeFocus === 'PREPARATION', focusValue: 'PREPARATION' as const },
+              { key: 'RACE', label: 'RACE TIME', config: raceConfig, remaining: raceRemaining, active: activeFocus === 'RACE', focusValue: 'RACE' as const }
+            ].map((panel) => (
+              <div key={panel.key} className="flex flex-col items-center justify-center gap-6">
+                <div className="w-full text-center">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl leading-none font-black tracking-widest uppercase text-white">
+                    {panel.label}
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextSession: SessionType = panel.key === 'PREP' ? 'PREP' : 'RACE';
+                    setActiveFocus(panel.focusValue);
+                    setSession(nextSession);
+                    syncSelectedTimerState(nextSession);
+                  }}
+                  className={`w-full h-[70vh] rounded-3xl border px-6 py-6 transition-all duration-300 flex flex-col items-center justify-center ${panel.active ? 'border-[#1f7cff] bg-[#0d1d33] shadow-[0_0_30px_rgba(31,124,255,0.25)]' : 'border-zinc-800 bg-[#111] opacity-90'}`}
+                >
+                  <div className="flex items-center justify-between w-full text-[10px] sm:text-xs tracking-[0.35em] uppercase text-zinc-400 mb-4">
+                    <span>{panel.key === 'PREP' ? 'PREPARATION' : 'RACE'}</span>
+                    <span className={panel.active ? 'text-[#5ca2ff]' : 'text-zinc-500'}>{panel.active ? 'FOCUSED' : 'READY'}</span>
+                  </div>
+                  <div className="flex items-center justify-center flex-1 w-full">
+                    <h1 className="text-[12vw] lg:text-[8vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
+                      {formatTime(panel.remaining)}
+                    </h1>
+                  </div>
+                  <div className="mt-4 flex justify-center gap-2 text-[10px] uppercase tracking-[0.25em] text-zinc-500">
+                    <span>{panel.config.mode}</span>
+                  </div>
+                </button>
+
+                <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
+                  <h3 className="text-2xl md:text-4xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
+                    {teamName}
+                  </h3>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-12 w-full z-10">
+            <div className="flex flex-col items-center justify-center w-full gap-2">
+              <div className="animate-in fade-in slide-in-from-top-8 duration-700 w-full px-8">
+                <h2 className="text-4xl sm:text-5xl md:text-5xl leading-none font-black tracking-widest uppercase text-white text-center">
+                  {activeFocus === 'PREPARATION' ? 'PREPARATION TIME' : 'RACE TIME'}
+                </h2>
+              </div>
+
+              <div className="w-full flex items-center justify-center relative">
+                <div className={`bg-[#111] rounded-3xl px-12 py-6 relative overflow-hidden flex items-center justify-center min-w-[60vw] border transition-all duration-300 ${activeFocus === 'PREPARATION' ? 'border-[#1f7cff] shadow-[0_0_30px_rgba(31,124,255,0.25)]' : 'border-zinc-800'}`}>
+                  <div className={`text-center transition-all duration-500 z-10 ${isSettingTime ? 'opacity-10 blur-sm scale-95' : 'opacity-100 scale-100'}`}>
+                    <h1 ref={timerDisplayRef} className="text-[16vw] font-bold tracking-tighter text-[#FF9900] font-digital italic tabular-nums leading-none">
+                      {formatTime(focusRemaining)}
+                    </h1>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-            
+
+            <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
+              <h3 className="text-3xl md:text-5xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
+                {teamName}
+              </h3>
+            </div>
           </div>
-          
-          {/* 3. Identitas Tim (Bawah, Lebih Kecil) */}
-          <div className="flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 px-8">
-            <h3 className="text-3xl md:text-5xl leading-tight font-extrabold tracking-tight text-zinc-300 drop-shadow-lg text-center max-w-4xl">
-              {teamName}
-            </h3>
-          </div>
-          
-        </div>
+        )}
 
       {/* Indikator Status Pause/Running - Dipindah ke Kanan Bawah */}
       {phase !== 'FINISHED' && !isSettingTime && status === 'idle' && (
