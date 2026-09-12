@@ -26,6 +26,16 @@ const formatTime = (ms: number) => {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
 };
 
+const parseTime = (value: string | null | undefined) => {
+  if (!value) return null;
+
+  const match = value.trim().match(/^(\d+):(\d{2})\.(\d{2})$/);
+  if (!match) return null;
+
+  const [, minutes, seconds, centiseconds] = match;
+  return (Number(minutes) * 60 + Number(seconds)) * 1000 + Number(centiseconds) * 10;
+};
+
 interface ClientTimerProps {
   teamId: string;
   teamName: string;
@@ -201,7 +211,11 @@ export default function ClientTimer({ teamId, teamName, division }: ClientTimerP
   const finishTimer = useCallback(async () => {
     if (phase === 'FINISHED' || isSavingRef.current) return;
 
-    const finalRemainingTime = Math.floor(Math.max(0, remainingTimeRef.current));
+    const activeTimerText = session === 'PREP'
+      ? prepTimerTextRef.current?.textContent
+      : raceTimerTextRef.current?.textContent;
+    const displayedRemainingTime = parseTime(activeTimerText);
+    const finalRemainingTime = displayedRemainingTime ?? Math.floor(Math.max(0, remainingTimeRef.current));
     remainingTimeRef.current = finalRemainingTime;
     isSavingRef.current = true;
     stopTimer();
